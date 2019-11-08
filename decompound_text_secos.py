@@ -1,11 +1,14 @@
-import os
+#! /usr/bin/env python3
+
+from typing import Set, Dict, IO, Iterable, List, Optional, Tuple
+
+import gzip
 import sys
-import re
 
-i=0
+i = 0
 
-if len(sys.argv)<9:
-    sys.stderr.write( "python "+sys.argv[0]+" dt_candidates word_count_file min_word_count(50) word_index prefix_length(3) suffix_length(3) word_length(5) dash_word(3) upper(upper) epsilon\n")
+if len(sys.argv) < 9:
+    sys.stderr.write("python " + sys.argv[0] + " dt_candidates word_count_file min_word_count(50) word_index prefix_length(3) suffix_length(3) word_length(5) dash_word(3) upper(upper) epsilon\n")
     sys.stderr.write("-----------------------------------------------------\n")
     sys.stderr.write("Parameter description:\n")
     sys.stderr.write("-----------------------------------------------------\n")
@@ -28,244 +31,261 @@ prefix_length = int(sys.argv[4])
 suffix_length = int(sys.argv[5])
 min_word_length = int(sys.argv[6])
 epsilon = float(sys.argv[9])
-#1 -> remove, 2 -> split, 3 -> nothing
+# 1 -> remove, 2 -> split, 3 -> nothing
 dash_words = int(sys.argv[7])
-uppercaseFirstLetter=False
-if sys.argv[8]=="upper":
-    uppercaseFirstLetter=True
+uppercaseFirstLetter = False
+if sys.argv[8] == "upper":
+    uppercaseFirstLetter = True
 
 
 debug = True
-debug = False
 
-def nopen(f):
+
+def nopen(f: str) -> IO[str]:
     if f.endswith(".gz"):
         return gzip.open(f)
-    return open(f)
+    return open(f, encoding="utf-8")
 
 
-words = set()
+words: Set[str] = set()
 total_word_count = 0
-word_count = {}
+word_count: Dict[str, int] = {}
 for l in nopen(file_wordcount):
     ls = l.strip().split("\t")
     wc = int(ls[1])
-    #if wc >=min_word_count:
-    word_count[ls[0]]=wc
-    total_word_count+=wc
+    word_count[ls[0]] = wc
+    total_word_count += wc
 
-def removeWord(w):
-    if len(w.replace("-",""))==0:
+
+def removeWord(w: str) -> bool:
+    if len(w.replace("-", "")) == 0:
         return True
-    if min_word_count <=0:
+    if min_word_count <= 0:
         return False
     if w in word_count:
-        if word_count[w]>=min_word_count:
+        if word_count[w] >= min_word_count:
             return False
-
     return True
-def bylength(word1,word2):
-    return len(word2)-len(word1)
 
-def removeShortAndEqual(wc,ws):
-    nws=set()
+
+def removeShortAndEqual(wc: str, ws: Iterable[str]) -> List[str]:
+    nws = set()
     for w in ws:
-        if len(w)>=min_word_length and w.lower()!=wc.lower() and not w.isupper() and w.lower() in wc.lower():
+        if len(w) >= min_word_length and w.lower() != wc.lower() and not w.isupper() and w.lower() in wc.lower():
             nws.add(w)
     return list(nws)
-#count suffixes and prefixes
-fillers = {}
-def addUp(w):
+
+
+# count suffixes and prefixes
+fillers: Dict[str, int] = {}
+
+
+def addUp(w: str) -> None:
     if w in fillers:
-        fillers[w]+=1
+        fillers[w] += 1
     else:
-        fillers[w]=1
-def appendSuffix(w):
+        fillers[w] = 1
+
+
+def appendSuffix(w: str) -> str:
     nl = ""
-    #first append on the left side
+    # first append on the left side
     for l in w.split("-"):
-        if len(l)>suffix_length:
-            nl+="-"
+        if len(l) > suffix_length:
+            nl += "-"
         else:
             addUp(l)
-        nl+=l
+        nl += l
     nl = nl.strip("-")
     return nl
 
-def appendPrefix(w):
-    #append to the right
+
+def appendPrefix(w: str) -> str:
+    # append to the right
     nw = w
     nl = ""
     for l in nw.split("-"):
-        nl+=l
-        if len(l)>prefix_length:
-            nl+="-"
+        nl += l
+        if len(l) > prefix_length:
+            nl += "-"
     if nl.endswith("-"):
         nl = nl[:-1]
     return nl
-def getWordCounts(comp):
-    sum = 1
+
+
+def getWordCounts(comp: str) -> float:
+    sum = 1.0
     for c in comp.split("-"):
         if uppercaseFirstLetter:
-            c = c[0].upper()+c[1:]
+            c = c[0].upper() + c[1:]
         if c in word_count:
-            sum*=(word_count[c]+epsilon)/(total_word_count+epsilon*len(word_count))
+            sum *= (word_count[c] + epsilon) / (total_word_count + epsilon * len(word_count))
         else:
-            sum*=epsilon/(total_word_count+epsilon*len(word_count))
-    return pow(1.0*sum,1.0/len(comp.split("-")))
+            sum *= epsilon / (total_word_count + epsilon * len(word_count))
+    return pow(1.0 * sum, 1.0 / len(comp.split("-")))
 
-def appendSuffixAndPrefix(w):
+
+def appendSuffixAndPrefix(w: str) -> str:
     sp = appendSuffix(appendPrefix(w))
     ps = appendPrefix(appendSuffix(w))
     spc = getWordCounts(sp)
     psc = getWordCounts(ps)
-    #if w.replace("-","")=="Regionalliga":
-    if spc>psc:
+    if spc > psc:
         return sp
     return ps
 
-def generateCompound(w,ws):
-    #remove too short words
-    #if debug: sys.out.write(ws
-    nws = removeShortAndEqual(w,ws)
-    if len(nws)==0:
-        
-        if debug: sys.stderr.write( "NONE: "+w+"\n")
+
+def generateCompound(w: str, ws: Iterable[str]) -> Optional[str]:
+    # remove too short words
+    nws = removeShortAndEqual(w, ws)
+    if len(nws) == 0:
+        if debug:
+            sys.stderr.write("NONE: " + w + "\n")
         return None
-    nws_sorted = sorted(nws,cmp=bylength,reverse=True)
-    #get split points
-    splits=set()
+    nws_sorted = sorted(nws, key=lambda x: len(x), reverse=True)
+    # get split points
+    splits = set()
     for n in nws_sorted:
         if not n.lower() in w.lower():
             continue
-
         idx = w.lower().index(n.lower())
         splits.add(idx)
-        splits.add(idx+len(n))
+        splits.add(idx + len(n))
     splits_sorted = sorted(list(splits))
     wc = ""
     prev = 0
     for i in splits_sorted:
-        if i==0:
+        if i == 0:
             continue
-        wc += w[prev:i]+"-"
+        wc += w[prev:i] + "-"
         prev = i
-    wc +=w[prev:]
+    wc += w[prev:]
     if wc.endswith("-"):
         wc = wc[:-1]
     return wc
 
-def addCompound(comp,w,ws):
-    if ws !=None:
+
+def addCompound(comp: Dict[str, str], w: str, ws: str) -> None:
+    if ws is not None:
         ws_merged = appendSuffixAndPrefix(ws)
-        comp[w]=ws_merged
-        if debug:sys.stderr.write( "Result: "+w+"\t"+ws+"\t"+ws_merged+"\n")
-def processCompound(comp,w,wns):
+        comp[w] = ws_merged
+        if debug:
+            sys.stderr.write("Result: " + w + "\t" + ws + "\t" + ws_merged + "\n")
+
+
+def processCompound(comp: Dict[str, str], w: str, wns: str) -> None:
     wns_split = wns.split(" ")
-    if "-" in w and dash_words ==1:
+    if "-" in w and dash_words == 1:
         return
-    if dash_words ==2:
+    if dash_words == 2:
         ws = w.split("-")
         for wi in ws:
-            res = generateCompound(wi,wns_split)
-            addCompound(comp,wi,res)
+            res = generateCompound(wi, wns_split)
+            if res is not None:
+                addCompound(comp, wi, res)
         return
-    res = generateCompound(w,wns_split)
-    addCompound(comp,w,res)
-comp1 = {}
-comp2 ={}
-comp3 = {}
+    res = generateCompound(w, wns_split)
+    if res is not None:
+        addCompound(comp, w, res)
+
+
+comp1: Dict[str, str] = {}
+comp2: Dict[str, str] = {}
+comp3: Dict[str, str] = {}
 sys.stderr.write("read knowledge\n")
+
+
 for l in nopen(file_knowledge):
     ls = l.rstrip("\n").split("\t")
     w = ls[0]
     if not removeWord(w):
-        processCompound(comp1,w,ls[1])
-        processCompound(comp2,w,ls[2])
-        processCompound(comp3,w,ls[3])
+        processCompound(comp1, w, ls[1])
+        processCompound(comp2, w, ls[2])
+        processCompound(comp3, w, ls[3])
 sys.stderr.write("extract single words\n")
-singlewords = set()
+singlewords: Set[str] = set()
 for c in comp1:
     if "-" in comp1[c]:
-        singlewords|=set(comp1[c].split("-"))
+        singlewords |= set(comp1[c].split("-"))
 sys.stderr.write("start decompound process\n")
-#k = nopen("singlewords_martin","w")
-#for s in singlewords:
-#    k.write(s+"\n")
-#close(k)
-def containedIn(c,cands):
+
+
+def containedIn(c: str, cands: Iterable[str]) -> bool:
     for cj in cands:
-        if c.lower() in cj.lower() and c.lower()!=cj.lower():
+        if c.lower() in cj.lower() and c.lower() != cj.lower():
             return True
     return False
-def unknownWordCompounding(w):
+
+
+def unknownWordCompounding(w: str) -> Tuple[str, Set[str]]:
     cands = set()
     for s in singlewords:
-        if s.lower() in w.lower()and not s.lower()==w.lower():
+        if s.lower() in w.lower() and not s.lower() == w.lower():
             cands.add(s)
     cands_new = set()
     for ci in cands:
-        if not containedIn(ci,cands):
+        if not containedIn(ci, cands):
             cands_new.add(ci)
-    res = generateCompound(w,cands_new)
-    if debug: sys.stderr.write("unknown1: "+res+"\n")
-    if res==None:
+    res = generateCompound(w, cands_new)
+    if debug:
+        sys.stderr.write("unknown1: " + res + "\n")
+    if res is None:
         res = w
     else:
         res = appendSuffixAndPrefix(res)
-    if debug: sys.stderr.write("unknown2: "+res+"\n")
-    return [res,cands_new]
+    if debug:
+        sys.stderr.write("unknown2: " + res + "\n")
+    return (res, cands_new)
 
-def getFirstDash(compounds):
+
+def getFirstDash(compounds: Iterable[str]) -> int:
     i = 0
     for c in compounds:
         if "-" in c:
             return i
-        i+=1
+        i += 1
     return -1
-def getMaxIdx(ls):
+
+
+def getMaxIdx(ls: Iterable[float]) -> Tuple[int, float]:
     idx = -1
-    val = 0
-    i=0
+    val = 0.0
+    i = 0
     for l in ls:
-        if l>val:
+        if l > val:
             val = l
             idx = i
-        i+=1 
-    return [idx,val]
+        i += 1
+    return (idx, val)
 
-def getHighestProb(compounds):
+
+def getHighestProb(compounds: Iterable[str]) -> Tuple[int, float]:
     probs = []
     for c in compounds:
         p = getWordCounts(c)
-        #if not "-" in c:
-        #    p = p*-1
         probs.append(p)
     return getMaxIdx(probs)
-    
-               
+
+
+# NOTE: Different from decompound_secos.py
 for l in sys.stdin:
     text = ""
     for w in l.strip().split():
         wc = -1
         if w in word_count:
             wc = word_count[w]
-        c1 = comp1.get(w,w)
-        c2 = comp2.get(w,w)
-        c3 = comp3.get(w,w)
-        [u,ufeats]=unknownWordCompounding(w)
+        c1 = comp1.get(w, w)
+        c2 = comp2.get(w, w)
+        c3 = comp3.get(w, w)
+        [u, ufeats] = unknownWordCompounding(w)
         cand = w
-        cands = [c1,c2,c3,u]
+        cands = [c1, c2, c3, u]
         idx = getFirstDash(cands)
-        if idx>=0:
+        if idx >= 0:
             cand = cands[idx]
-        [idx,prob] = getHighestProb(cands)
+        [idx, prob] = getHighestProb(cands)
         pcand = w
-        if idx>=0:
+        if idx >= 0:
             pcand = cands[idx]
-        text+=" " + pcand.replace("-" ," ")
-    print text.strip()
-    #    print "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s" %(pprefix,pcand,prefix,cand,c1,c2,c3,u,l.strip(),wc,ufeats) 
-
-
-        
+        text += " " + pcand.replace("-", " ")
+    print(text.strip())
