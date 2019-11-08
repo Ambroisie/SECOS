@@ -2,28 +2,57 @@
 
 # Decompounds from stdin instead of reading a file directly
 
-from typing import Set, Dict, IO, Iterable, List, Optional, Tuple
-
 import gzip
 import sys
+from typing import IO, Dict, Iterable, List, Optional, Set, Tuple
 
 i = 0
 
+
+def eprint(*args, **kwargs) -> None:
+    print(*args, file=sys.stderr, **kwargs)
+
+
 if len(sys.argv) < 9:
-    sys.stderr.write("python " + sys.argv[0] + " dt_candidates word_count_file min_word_count(50) word_index prefix_length(3) suffix_length(3) word_length(5) dash_word(3) upper(upper) epsilon\n")
-    sys.stderr.write("-----------------------------------------------------\n")
-    sys.stderr.write("Parameter description:\n")
-    sys.stderr.write("-----------------------------------------------------\n")
-    sys.stderr.write("dt_candidates:\t\tfile with words and their split candidates, generated from a distributional thesaurus (DT)\n")
-    sys.stderr.write("word_count_file:\tfile with word counts used for filtering\n")
-    sys.stderr.write("min_word_count:\t\tminimal word count used for split candidates (recommended paramater: 50)\n")
-    sys.stderr.write("prefix_length:\t\tlength of prefixes that are appended to the right-sided word (recommended parameter: 3)\n")
-    sys.stderr.write("suffix_length:\t\tlength of suffixes that are appended to the left-sided word (recommended parameter: 3)\n")
-    sys.stderr.write("word_length:\t\tminimal word length that is used from the split candidates (recommended parameter: 5)\n")
-    sys.stderr.write("dash_word:\t\theuristic to split words with dash, which has no big impact (recommended: 3)\n")
-    sys.stderr.write("upper:\t\t\tconsider uppercase letters (=upper) or not (=lower). Should be set for case-sensitive languages e.g. German\n")
-    sys.stderr.write("epsilon:\t\tsmoothing factor (recommended parameter: 0.01\n")
-    sys.exit(0)
+    eprint(
+        f"python {sys.argv[0]} dt_candidates word_count_file min_word_count(50) "
+        "word_index prefix_length(3) suffix_length(3) word_length(5) dash_word(3) "
+        "upper(upper) epsilon"
+    )
+    eprint("-----------------------------------------------------")
+    eprint("Parameter description:")
+    eprint("-----------------------------------------------------")
+    eprint(
+        "dt_candidates:\t\tfile with words and their split candidates, "
+        "generated from a distributional thesaurus (DT)"
+    )
+    eprint("word_count_file:\tfile with word counts used for filtering")
+    eprint(
+        "min_word_count:\t\tminimal word count used for split candidates "
+        "(recommended paramater: 50)"
+    )
+    eprint(
+        "prefix_length:\t\tlength of prefixes that are appended to the right-sided "
+        "word (recommended parameter: 3)"
+    )
+    eprint(
+        "suffix_length:\t\tlength of suffixes that are appended to the left-sided "
+        "word (recommended parameter: 3)"
+    )
+    eprint(
+        "word_length:\t\tminimal word length that is used from the split "
+        "candidates (recommended parameter: 5)"
+    )
+    eprint(
+        "dash_word:\t\theuristic to split words with dash, which has no big impact "
+        "(recommended: 3)"
+    )
+    eprint(
+        "upper:\t\t\tconsider uppercase letters (=upper) or not (=lower). "
+        "Should be set for case-sensitive languages e.g. German"
+    )
+    eprint("epsilon:\t\tsmoothing factor (recommended parameter: 0.01")
+    sys.exit(1)
 file_knowledge = sys.argv[1]
 file_wordcount = sys.argv[2]
 min_word_count = int(sys.argv[3])
@@ -75,7 +104,12 @@ def removeWord(w: str) -> bool:
 def removeShortAndEqual(wc: str, ws: Iterable[str]) -> List[str]:
     nws = set()
     for w in ws:
-        if len(w) >= min_word_length and w.lower() != wc.lower() and not w.isupper() and w.lower() in wc.lower():
+        if (
+            len(w) >= min_word_length
+            and w.lower() != wc.lower()
+            and not w.isupper()
+            and w.lower() in wc.lower()
+        ):
             nws.add(w)
     return list(nws)
 
@@ -123,7 +157,9 @@ def getWordCounts(comp: str) -> float:
         if uppercaseFirstLetter:
             c = c[0].upper() + c[1:]
         if c in word_count:
-            sum *= (word_count[c] + epsilon) / (total_word_count + epsilon * len(word_count))
+            sum *= (word_count[c] + epsilon) / (
+                total_word_count + epsilon * len(word_count)
+            )
         else:
             sum *= epsilon / (total_word_count + epsilon * len(word_count))
     return pow(1.0 * sum, 1.0 / len(comp.split("-")))
@@ -144,7 +180,7 @@ def generateCompound(w: str, ws: Iterable[str]) -> Optional[str]:
     nws = removeShortAndEqual(w, ws)
     if len(nws) == 0:
         if debug:
-            sys.stderr.write("NONE: " + w + "\n")
+            eprint(f"NONE: {w}")
         return None
     nws_sorted = sorted(nws, key=lambda x: len(x), reverse=True)
     # get split points
@@ -174,7 +210,7 @@ def addCompound(comp: Dict[str, str], w: str, ws: str) -> None:
         ws_merged = appendSuffixAndPrefix(ws)
         comp[w] = ws_merged
         if debug:
-            sys.stderr.write("Result: " + w + "\t" + ws + "\t" + ws_merged + "\n")
+            eprint(f"Result: {w}\t{ws}\t{ws_merged}")
 
 
 def processCompound(comp: Dict[str, str], w: str, wns: str) -> None:
@@ -196,7 +232,7 @@ def processCompound(comp: Dict[str, str], w: str, wns: str) -> None:
 comp1: Dict[str, str] = {}
 comp2: Dict[str, str] = {}
 comp3: Dict[str, str] = {}
-sys.stderr.write("read knowledge\n")
+eprint("read knowledge")
 
 
 for l in nopen(file_knowledge):
@@ -206,12 +242,12 @@ for l in nopen(file_knowledge):
         processCompound(comp1, w, ls[1])
         processCompound(comp2, w, ls[2])
         processCompound(comp3, w, ls[3])
-sys.stderr.write("extract single words\n")
+eprint("extract single words")
 singlewords: Set[str] = set()
 for c in comp1:
     if "-" in comp1[c]:
         singlewords |= set(comp1[c].split("-"))
-sys.stderr.write("start decompound process\n")
+eprint("decompound")
 
 
 def containedIn(c: str, cands: Iterable[str]) -> bool:
@@ -232,13 +268,13 @@ def unknownWordCompounding(w: str) -> Tuple[str, Set[str]]:
             cands_new.add(ci)
     res = generateCompound(w, cands_new)
     if debug:
-        sys.stderr.write(f"unknown1: {res}\n")
+        eprint(f"unknown1: {res}")
     if res is None:
         res = w
     else:
         res = appendSuffixAndPrefix(res)
     if debug:
-        sys.stderr.write("unknown2: " + res + "\n")
+        eprint(f"unknown2: {res}")
     return (res, cands_new)
 
 

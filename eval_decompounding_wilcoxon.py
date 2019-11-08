@@ -1,14 +1,29 @@
 #! /usr/bin/env python3
 
-from typing import cast, List, Tuple
+# Use a testing dataset containing compound words to calculate precision, recall, F1
+# This one also reports the significance of each method (i.e: comparing performance)
 
 import sys
+from typing import List, Tuple, cast
+
 import scipy.stats
 
+
+def eprint(*args, **kwargs) -> None:
+    print(*args, file=sys.stderr, **kwargs)
+
+
 if len(sys.argv) < 7:
-    print("this script performs an evaluation of two methods for compound splitting and also computes a wilcoxon test based on the F measure for each compound")
-    print("python %s compound_1_file compound_1_column_predicted compound_1_column_gold compound_2_file compound_2_column_predicted compound_2_column_gold " % (sys.argv[0]))
-    sys.exit(0)
+    eprint(
+        "this script performs an evaluation of two methods for compound splitting "
+        "and also computes a wilcoxon test based on the F measure for each compound"
+    )
+    eprint(
+        f"python {sys.argv[0]} compound_1_file compound_1_column_predicted "
+        "compound_1_column_gold compound_2_file "
+        "compound_2_column_predicted compound_2_column_gold"
+    )
+    sys.exit(1)
 f1 = sys.argv[1]
 f1_col_split = int(sys.argv[2])
 f1_col_gold = int(sys.argv[3])
@@ -64,8 +79,8 @@ scores2 = (0.0, 0.0, 0.0)
 f1_lines = open(f1).readlines()
 f2_lines = open(f2).readlines()
 if len(f1_lines) != len(f2_lines):
-    print("files have not same length")
-    sys.exit(0)
+    print("files do not have the same length")
+    sys.exit(1)
 
 
 # NOTE: Different from eval_decompounding.py
@@ -89,7 +104,7 @@ for i in range(0, len(f1_lines)):
     gold1 = ls1[f1_col_gold].lower()
     gold2 = ls2[f2_col_gold].lower()
     if gold1 != gold2:
-        print("inequal: %s\t%s" % (gold1, gold2))
+        print(f"inequal: {gold1}\t{gold2}")
         print(f1_lines[i].strip())
         print(f2_lines[i].strip())
     cand1 = ls1[f1_col_split].lower()
@@ -99,7 +114,7 @@ for i in range(0, len(f1_lines)):
     e1 = computeEvalSc(sc1)
     e2 = computeEvalSc(sc2)
     if outp:
-        print("%f\t%f\t%s\t%s\t%s" % (e1[2], e2[2], cand1, cand2, gold1))
+        print(f"{e1[2]}{e2[2]}{cand1}{cand2}{gold1}")
     x1.append(e1[2])
     x2.append(e2[2])
     xd.append(e2[2] - e1[2])
@@ -119,8 +134,8 @@ for i in range(0, len(f1_lines)):
         i2 = 1
     mcn[i1][i2] += 1
     if outp:
-        print(flag1 + "\t" + f1_lines[i].strip())
-        print(flag2 + "\t" + f2_lines[i].strip())
+        print(f"{flag1}\t{f1_lines[i].strip()}")
+        print(f"{flag2}\t{f2_lines[i].strip()}")
     a1 += 1
     a2 += 1
 print(f1)
@@ -128,7 +143,7 @@ printEval(scores1, a1, c1)
 print(f2)
 printEval(scores2, a2, c2)
 print("Wilcox")
-print(scipy.stats.wilcoxon(x1, y=x2, zero_method='wilcox'))
-print(scipy.stats.wilcoxon(x2, y=x1, zero_method='wilcox'))
+print(scipy.stats.wilcoxon(x1, y=x2, zero_method="wilcox"))
+print(scipy.stats.wilcoxon(x2, y=x1, zero_method="wilcox"))
 print("Wilcox2")
-print(scipy.stats.wilcoxon(xd, zero_method='wilcox'))
+print(scipy.stats.wilcoxon(xd, zero_method="wilcox"))

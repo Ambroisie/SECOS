@@ -1,12 +1,21 @@
 #! /usr/bin/env python3
 
-from typing import cast, Set, Tuple
+# Use a testing dataset containing compound words to calculate precision, recall, F1
 
 import sys
+from typing import Set, Tuple, cast
+
+
+def eprint(*args, **kwargs) -> None:
+    print(*args, file=sys.stderr, **kwargs)
+
 
 if len(sys.argv) < 3:
-    print("cat compound_file | python %s column_predicted column_gold_compound " % (sys.argv[0]))
-    sys.exit(0)
+    eprint(
+        f"cat compound_file | python {sys.argv[0]} "
+        "column_predicted column_gold_compound"
+    )
+    sys.exit(1)
 col_split = int(sys.argv[1])
 col_gold = int(sys.argv[2])
 outp = False
@@ -43,23 +52,25 @@ scores = (0, 0, 0)
 for l in sys.stdin:
     ls = l.strip().split("\t")
     if len(ls) < col_gold or len(ls) < col_split:
-        sys.stderr.write("Line too short\n" + l)
+        eprint(f"Line too short\n{l}")
     gold = ls[col_gold].lower()
     cand = ls[col_split].lower()
-    scores = cast(Tuple[int, int, int], tuple(sum(x) for x in zip(scores, evaluate(gold, cand))))
+    scores = cast(
+        Tuple[int, int, int], tuple(sum(x) for x in zip(scores, evaluate(gold, cand)))
+    )
     flag = "0"
     if gold == cand:
         flag = "1"
         c += 1
-    if outp :
-        print(flag + "\t" + l.strip())
+    if outp:
+        print(f"{flag}\t{l.strip()}")
     a += 1
 k = scores
 p = 1.0 * k[0] / (1.0 * k[0] + k[1])
 r = 1.0 * k[0] * k[0] / (1.0 * k[0] + k[1] + k[2])
 f = 2 * p * r / (p + r)
-sys.stderr.write("Precision\tRecall\tF1\n")
-sys.stderr.write("%f\t%f\t%f\n" % (p, r, f))
-sys.stderr.write("%10.4f & %10.4f&%10.4f\n" % (p, r, f))
-sys.stderr.write("Considered\tCorrect\tPercentage of Correct ones\n")
-sys.stderr.write("%f\t%f\t%f\n" % (a, c, 1.0 * c / a))
+eprint("Precision\tRecall\tF1\n")
+eprint(f"{p}{r}{f}")
+eprint(f"{p:10.4f} & {r:10.4f}&{f:10.4f}")
+eprint("Considered\tCorrect\tPercentage of Correct ones")
+eprint(f"{a}\t{c}\t{c / a}")

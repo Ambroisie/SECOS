@@ -1,9 +1,15 @@
 #! /usr/bin/env python3
 
-from typing import Dict, List, Iterable
+# Training new decompounding models using a distributional thesaurus from JoBimText
 
-import sys
 import re
+import sys
+from typing import Dict, Iterable, List
+
+
+def eprint(*args, **kwargs) -> None:
+    print(*args, file=sys.stderr, **kwargs)
+
 
 dt: Dict[str, List[str]] = {}
 i = 0
@@ -20,14 +26,14 @@ for l in sys.stdin:
     w1 = ls[0]
     w2 = ls[1]
     if not (accept.match(w1) and accept.match(w2)):
-        sys.stderr.write("Not accepted: " + w1 + "\t" + w2 + "\n")
+        eprint(f"Not accepted: {w1}\t{w2}")
         continue
     if w1 in dt:
         dt[w1].append(w2)
     else:
         dt[w1] = [w2]
     if i % 1000000 == 0:
-        sys.stderr.write(str(i) + "\n")
+        eprint(f"{i}")
     i += 1
 
 
@@ -73,7 +79,7 @@ for w1 in dt:
         out2 += " " + w2 + ":" + str(sims_overlap[w2])
     out3 = out3 + out1
     out1 = out1.strip()
-    print(w1 + "\t" + " ".join(word_overlap) + "\t" + out1 + "\t" + out3 + "\t" + out2)
+    print(f"{w1}\t{' '.join(word_overlap)}\t{out1}\t{out3}\t{out2}")
     j += 1
     if j % 1000000 == 0:
-        sys.stderr.write(str(j) + "\t" + str(1.0 * j / i) + "\n")
+        eprint(f"{j}\t{j / i}")
