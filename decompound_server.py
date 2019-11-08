@@ -1,5 +1,7 @@
 #! /usr/bin/env python3
 
+# Decompounding as a Service using an HTTP server
+
 from typing import Set, Dict, IO, Iterable, List, Optional, Tuple
 
 import sys
@@ -44,7 +46,7 @@ if sys.argv[8] == "upper":
     uppercaseFirstLetter = True
 
 
-debug = True
+debug = not True
 
 words: Set[str] = set()
 total_word_count = 0
@@ -59,6 +61,8 @@ def nopen(f: str) -> IO[str]:
 
 for l in nopen(file_wordcount):
     ls = l.strip().split("\t")
+    if len(ls) < 2:
+        continue  # Differences between python2 and python3 strip method made it crash
     wc = int(ls[1])
     word_count[ls[0]] = wc
     total_word_count += wc
@@ -235,7 +239,7 @@ def unknownWordCompounding(w: str) -> Tuple[str, Set[str]]:
             cands_new.add(ci)
     res = generateCompound(w, cands_new)
     if debug:
-        sys.stderr.write("unknown1: " + res + "\n")
+        sys.stderr.write(f"unknown1: {res}\n")
     if res is None:
         res = w
     else:
