@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict
 from urllib.parse import parse_qs, urlparse
 
-from decompound import Decompounder
+from decompound import Splitter
 
 logging.basicConfig(
     format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
@@ -62,13 +62,13 @@ if len(sys.argv) < 9:
     sys.exit(1)
 
 
-decompounder = Decompounder(
+decompounder = Splitter(
     min_word_count=int(sys.argv[3]),
     prefix_length=int(sys.argv[4]),
     suffix_length=int(sys.argv[5]),
     min_word_length=int(sys.argv[6]),
     # 1 -> remove, 2 -> split, 3 -> nothing
-    dash_words=Decompounder.DashBehaviour(int(sys.argv[7])),
+    dash_words=Splitter.DashBehaviour(int(sys.argv[7])),
     uppercase_first_letter=True if sys.argv[8] == "upper" else False,
     epsilon=float(sys.argv[9]),
 )

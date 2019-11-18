@@ -27,7 +27,7 @@ def get_max_idx(ls: Iterable[float]) -> Tuple[int, float]:
 
 
 @dataclass
-class Decompounder:
+class Splitter:
     class DashBehaviour(IntEnum):
         """
         Which heuristic should the decompounder use to split dashed-words.

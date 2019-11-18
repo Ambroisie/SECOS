@@ -5,7 +5,7 @@
 import logging
 import sys
 
-from decompound import Decompounder
+from decompound import Splitter
 
 logging.basicConfig(
     format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
@@ -62,13 +62,13 @@ if len(sys.argv) < 11:
     eprint("epsilon:\t\tsmoothing factor (recommended parameter: 0.01")
     sys.exit(1)
 
-decompounder = Decompounder(
+decompounder = Splitter(
     min_word_count=int(sys.argv[3]),
     prefix_length=int(sys.argv[6]),
     suffix_length=int(sys.argv[7]),
     min_word_length=int(sys.argv[8]),
     # 1 -> remove, 2 -> split, 3 -> nothing
-    dash_words=Decompounder.DashBehaviour(int(sys.argv[9])),
+    dash_words=Splitter.DashBehaviour(int(sys.argv[9])),
     uppercase_first_letter=True if sys.argv[10] == "upper" else False,
     epsilon=float(sys.argv[11]),
 )
