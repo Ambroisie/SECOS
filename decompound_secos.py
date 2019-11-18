@@ -83,7 +83,6 @@ decompounder.prepare_decompounding(file_wordcount, file_knowledge)
 file_compound = sys.argv[4]
 word_index_file_compound = int(sys.argv[5])
 
-# FIXME: gotta do this
 logging.info("decompound")
 for l in open(file_compound):
     ls = l.strip().split("\t")
@@ -91,6 +90,7 @@ for l in open(file_compound):
     wc = -1
     if w in decompounder.word_count:
         wc = decompounder.word_count[w]
+    # NOTE: the following is just Decompounder.split_compound with debugging info
     c1 = decompounder.comp1.get(w, w)
     c2 = decompounder.comp2.get(w, w)
     c3 = decompounder.comp3.get(w, w)

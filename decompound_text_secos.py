@@ -75,26 +75,9 @@ file_wordcount = sys.argv[2]
 
 decompounder.prepare_decompounding(file_wordcount, file_knowledge)
 
-# NOTE: Different from decompound_secos.py
-# FIXME: gotta do this
 for l in sys.stdin:
     text = ""
     for w in l.strip().split():
-        wc = -1
-        if w in decompounder.word_count:
-            wc = decompounder.word_count[w]
-        c1 = decompounder.comp1.get(w, w)
-        c2 = decompounder.comp2.get(w, w)
-        c3 = decompounder.comp3.get(w, w)
-        [u, ufeats] = decompounder._unknown_word_compounding(w)
-        cand = w
-        cands = [c1, c2, c3, u]
-        idx = decompounder._get_first_dash(cands)
-        if idx >= 0:
-            cand = cands[idx]
-        [idx, prob] = decompounder._get_highest_prob(cands)
-        pcand = w
-        if idx >= 0:
-            pcand = cands[idx]
+        pcand = decompounder.split_compound(w) or w
         text += " " + pcand.replace("-", " ")
     print(text.strip())

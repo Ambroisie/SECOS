@@ -251,6 +251,20 @@ class Decompounder:
         logging.info("extracting single words")
         self.extract_single_words()
 
+    def split_compound(self, w: str) -> Optional[str]:
+        """
+        Return the best split candidate for a given compound, or None
+        if no good candidate was found.
+        """
+        c1 = self.comp1.get(w, w)
+        c2 = self.comp2.get(w, w)
+        c3 = self.comp3.get(w, w)
+        (u, ufeats) = self._unknown_word_compounding(w)
+        cands = [c1, c2, c3, u]
+        (idx, prob) = self._get_highest_prob(cands)
+        if idx >= 0:
+            return cands[idx]
+        return None
 
     @staticmethod
     def _get_first_dash(compounds: Iterable[str]) -> int:

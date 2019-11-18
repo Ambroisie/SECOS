@@ -93,24 +93,15 @@ class Serv(BaseHTTPRequestHandler):
         # FIXME: gotta do this
         self._set_headers()
         query_components = parse_qs(urlparse(self.path).query)
-        text = ""
+        res = []
         for w in query_components["sentence"][0].split():
             if w in known_words:
-                text += " " + known_words[w]
+                res.append(known_words[w])
                 continue
-            c1 = decompounder.comp1.get(w, w)
-            c2 = decompounder.comp2.get(w, w)
-            c3 = decompounder.comp3.get(w, w)
-            (u, ufeats) = decompounder._unknown_word_compounding(w)
-            cands = [c1, c2, c3, u]
-            idx = decompounder._get_first_dash(cands)
-            (idx, prob) = decompounder._get_highest_prob(cands)
-            pcand = w
-            if idx >= 0:
-                pcand = cands[idx]
-            text += " " + pcand.replace("-", " ")
+            pcand = decompounder.split_compound(w) or w
+            res.append(pcand.replace("-", " "))
             known_words[w] = pcand.replace("-", " ")
-        self.wfile.write(text.encode())
+        self.wfile.write(" ".join(res).encode())
 
 
 def run(port: int = 80) -> None:
