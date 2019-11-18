@@ -5,7 +5,7 @@
 import logging
 import sys
 
-from decompound import Splitter
+from secos import Splitter
 
 logging.basicConfig(
     format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO

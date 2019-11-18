@@ -1,0 +1,1 @@
+from .decompound import Splitter

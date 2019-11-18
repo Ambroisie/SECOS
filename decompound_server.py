@@ -8,7 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict
 from urllib.parse import parse_qs, urlparse
 
-from decompound import Splitter
+from secos import Splitter
 
 logging.basicConfig(
     format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
