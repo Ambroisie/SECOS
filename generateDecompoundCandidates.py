@@ -2,84 +2,18 @@
 
 # Training new decompounding models using a distributional thesaurus from JoBimText
 
-import re
+import logging
 import sys
-from typing import Dict, Iterable, List
 
+from secos import Trainer
 
-def eprint(*args, **kwargs) -> None:
-    print(*args, file=sys.stderr, **kwargs)
+logging.basicConfig(
+    format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
+)
 
+trainer = Trainer(
+    pattern=sys.argv[1] if len(sys.argv) > 1 else ".*",
+    split_dash=True if len(sys.argv) > 2 else False,
+)
 
-dt: Dict[str, List[str]] = {}
-i = 0
-split_dash = False
-acceptRegex = ".*"
-if len(sys.argv) > 1:
-    acceptRegex = sys.argv[1]
-if len(sys.argv) > 2:
-    split_dash = True
-accept = re.compile(acceptRegex)
-prev = ""
-for l in sys.stdin:
-    ls = l.strip().split("\t")
-    w1 = ls[0]
-    w2 = ls[1]
-    if not (accept.match(w1) and accept.match(w2)):
-        eprint(f"Not accepted: {w1}\t{w2}")
-        continue
-    if w1 in dt:
-        dt[w1].append(w2)
-    else:
-        dt[w1] = [w2]
-    if i % 1000000 == 0:
-        eprint(f"{i}")
-    i += 1
-
-
-def getOverlap(w: str, ls: List[str]) -> List[str]:
-    wl = w.lower()
-    ret = []
-    for l in ls:
-        if l.lower() in wl:
-            ret.append(l)
-        if split_dash and "-" in l:
-            lm = l.split("-")
-            for m in lm:
-                if m in wl:
-                    ret.append(l)
-    return ret
-
-
-# NOTE: this stinks a bit
-def addset(d: Dict[str, int], s: Iterable[str]) -> Dict[str, int]:
-    for w in s:
-        if w in d:
-            d[w] += 1
-        else:
-            d[w] = 1
-    return d
-
-
-j = 0
-for w1 in dt:
-    sims = dt[w1]
-    word_overlap = getOverlap(w1, sims)
-    sims_overlap: Dict[str, int] = {}
-    for w2 in sims:
-        if w2 in dt:
-            overlap = getOverlap(w1, dt[w2])
-            # NOTE: this stinks a bit
-            sims_overlap = addset(sims_overlap, overlap)
-    out1 = ""
-    out2 = ""
-    out3 = " ".join(word_overlap)
-    for w2 in sims_overlap:
-        out1 += " " + w2
-        out2 += " " + w2 + ":" + str(sims_overlap[w2])
-    out3 = out3 + out1
-    out1 = out1.strip()
-    print(f"{w1}\t{' '.join(word_overlap)}\t{out1}\t{out3}\t{out2}")
-    j += 1
-    if j % 1000000 == 0:
-        eprint(f"{j}\t{j / i}")
+trainer.train()
