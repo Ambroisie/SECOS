@@ -8,7 +8,9 @@ from typing import TextIO, Tuple, cast
 import scipy.stats
 
 from .abstract import AbstractEvaluator
-from .common import evaluate
+from .common import EvalResult, evaluate
+
+ScoreResult = Tuple[float, float, float]
 
 
 @dataclass
@@ -28,19 +30,20 @@ class WilcoxonEvaluator(AbstractEvaluator):
     f2_col_gold: int
 
     def evaluate(self, output: TextIO = sys.stdout) -> None:
-        def printEval(scores: Tuple[float, float, float], a: float, c: float) -> None:
+        def print_eval(scores: ScoreResult, a: float, c: float) -> None:
             k = scores
             print(scores, file=output)
-            p = 1.0 * k[0] / (1.0 * k[0] + k[1])
-            r = 1.0 * k[0] / (1.0 * k[0] + k[1] + k[2])
+            p = k[0] / (k[0] + k[1])
+            r = k[0] / sum(k)
             f = 2 * p * r / (p + r)
+            # NOTE: there used to be twice the same output here, I removed one set
             print(f"{p}\t{r}\t{f}", file=output)
             print(f"{a}\t{c}\t{c / a}", file=output)
 
-        def computeEvalSc(k: Tuple[int, int, int]) -> Tuple[float, float, float]:
-            p = 1.0 * k[0] / (1.0 * k[0] + k[1])
-            r = 1.0 * k[0] / (1.0 * k[0] + k[1] + k[2])
-            if k[0] == 0:
+        def compute_eval_sc(k: EvalResult) -> ScoreResult:
+            p = k.correct / (k.correct + k.wrong)
+            r = k.correct / sum(k)
+            if k.correct == 0:
                 f = 0.0
             else:
                 f = 2 * p * r / (p + r)
@@ -74,18 +77,14 @@ class WilcoxonEvaluator(AbstractEvaluator):
             cand2 = ls2[self.f2_col_split].lower()
             sc1 = evaluate(gold1, cand1)
             sc2 = evaluate(gold2, cand2)
-            e1 = computeEvalSc(sc1)
-            e2 = computeEvalSc(sc2)
+            e1 = compute_eval_sc(sc1)
+            e2 = compute_eval_sc(sc2)
             logging.debug(f"{e1[2]}{e2[2]}{cand1}{cand2}{gold1}")
             x1.append(e1[2])
             x2.append(e2[2])
             xd.append(e2[2] - e1[2])
-            scores1 = cast(
-                Tuple[float, float, float], tuple(sum(x) for x in zip(scores1, sc1))
-            )
-            scores2 = cast(
-                Tuple[float, float, float], tuple(sum(x) for x in zip(scores2, sc2))
-            )
+            scores1 = cast(ScoreResult, tuple(sum(x) for x in zip(scores1, sc1)))
+            scores2 = cast(ScoreResult, tuple(sum(x) for x in zip(scores2, sc2)))
             flag1 = "0"
             flag2 = "0"
             i1 = 0
@@ -104,9 +103,9 @@ class WilcoxonEvaluator(AbstractEvaluator):
             a1 += 1
             a2 += 1
         print(self.f1, file=output)
-        printEval(scores1, a1, c1)
+        print_eval(scores1, a1, c1)
         print(self.f2, file=output)
-        printEval(scores2, a2, c2)
+        print_eval(scores2, a2, c2)
         print("Wilcox", file=output)
         print(scipy.stats.wilcoxon(x1, y=x2, zero_method="wilcox"), file=output)
         print(scipy.stats.wilcoxon(x2, y=x1, zero_method="wilcox"), file=output)

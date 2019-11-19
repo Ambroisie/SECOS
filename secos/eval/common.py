@@ -1,4 +1,10 @@
-from typing import Set, Tuple
+from typing import NamedTuple, Set
+
+
+class EvalResult(NamedTuple):
+    correct: int
+    wrong: int
+    unsplit: int
 
 
 def get_idx(w: str) -> Set[int]:
@@ -11,7 +17,7 @@ def get_idx(w: str) -> Set[int]:
     return idx
 
 
-def evaluate(w1: str, w2: str) -> Tuple[int, int, int]:
+def evaluate(w1: str, w2: str) -> EvalResult:
     cc = 0  # correct splits
     wfc = 0  # compound wrong split
     wnc = 0  # compound not split
@@ -20,4 +26,4 @@ def evaluate(w1: str, w2: str) -> Tuple[int, int, int]:
     cc = len(w1i & w2i)
     wnc = len(w1i - w2i)
     wfc = len(w2i - w1i)
-    return (cc, wfc, wnc)
+    return EvalResult(cc, wfc, wnc)
