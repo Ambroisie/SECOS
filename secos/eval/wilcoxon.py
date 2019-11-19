@@ -55,7 +55,7 @@ class WilcoxonEvaluator(AbstractEvaluator):
         f1_lines = open(self.f1).readlines()
         f2_lines = open(self.f2).readlines()
         if len(f1_lines) != len(f2_lines):
-            raise RuntimeError("Files do not have the same length")
+            raise self.InputError("Files do not have the same length")
 
         x1 = []
         x2 = []
