@@ -206,13 +206,17 @@ class Splitter:
 
         The file can be opened with gzip if it ends in '.gz'.
         """
-        for l in nopen(name):
-            ls = l.strip().split("\t")
-            if len(ls) < 2:
-                continue  # Don't crash on error-prone split
-            wc = int(ls[1])
-            self.word_count[ls[0]] = wc
-            self.total_word_count += wc
+        for i, l in enumerate(nopen(name)):
+            try:
+                ls = l.strip().split("\t")
+                if len(ls) < 2:
+                    logging.info(f"{name}:{i}: split error")
+                    continue  # Don't crash on error-prone split
+                wc = int(ls[1])
+                self.word_count[ls[0]] = wc
+                self.total_word_count += wc
+            except UnicodeEncodeError as e:
+                logging.info(f"{name}:{i}: ", e)
 
     def read_knowledge(self, name: str) -> None:
         """
@@ -222,13 +226,19 @@ class Splitter:
 
         The file can be opened with gzip if it ends in '.gz'.
         """
-        for l in nopen(name):
-            ls = l.rstrip("\n").split("\t")
-            w = ls[0]
-            if not self._remove_word(w):
-                self._process_compound(self.comp1, w, ls[1])
-                self._process_compound(self.comp2, w, ls[2])
-                self._process_compound(self.comp3, w, ls[3])
+        for i, l in enumerate(nopen(name)):
+            try:
+                ls = l.rstrip("\n").split("\t")
+                if len(ls) < 4:
+                    logging.info(f"{name}:{i}: split error")
+                    continue  # Don't crash on error-prone split
+                w = ls[0]
+                if not self._remove_word(w):
+                    self._process_compound(self.comp1, w, ls[1])
+                    self._process_compound(self.comp2, w, ls[2])
+                    self._process_compound(self.comp3, w, ls[3])
+            except UnicodeEncodeError as e:
+                logging.info(f"{name}:{i}: ", e)
 
     def extract_single_words(self) -> None:
         """
