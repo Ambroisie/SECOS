@@ -37,7 +37,7 @@ class Splitter:
         SPLIT = 2
         IGNORE = 3
 
-    epsilon: float
+    epsilon: float = 0.01
     min_word_length: int = 5
     min_word_count: int = 50
     prefix_length: int = 3
