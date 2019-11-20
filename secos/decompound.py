@@ -102,19 +102,15 @@ class Splitter:
         return nl
 
     def _get_word_counts(self, comp: str) -> float:
-        sum = 1.0
-        for c in comp.split("-"):
+        tot = 1.0
+        split = comp.split("-")
+        for c in split:
             if self.uppercase_first_letter:
                 c = c[0].upper() + c[1:]
-            if c in self.word_count:
-                sum *= (self.word_count[c] + self.epsilon) / (
-                    self.total_word_count + self.epsilon * len(self.word_count)
-                )
-            else:
-                sum *= self.epsilon / (
-                    self.total_word_count + self.epsilon * len(self.word_count)
-                )
-        return pow(1.0 * sum, 1.0 / len(comp.split("-")))
+            tot *= (self.word_count.get(c, 0) + self.epsilon) / (
+                self.total_word_count + self.epsilon * len(self.word_count)
+            )
+        return pow(tot, 1.0 / len(split))
 
     def _append_suffix_and_prefix(self, w: str) -> str:
         sp = self._append_suffix(self._append_prefix(w))
@@ -269,7 +265,7 @@ class Splitter:
         c1 = self.comp1.get(w, w)
         c2 = self.comp2.get(w, w)
         c3 = self.comp3.get(w, w)
-        (u, ufeats) = self._unknown_word_compounding(w)
+        (u, __) = self._unknown_word_compounding(w)
         cands = [c1, c2, c3, u]
         (idx, prob) = self._get_highest_prob(cands)
         if idx >= 0:
