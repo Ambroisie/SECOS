@@ -149,7 +149,7 @@ class Splitter:
             wc = wc[:-1]
         return wc
 
-    def _add_compound(self, comp: Dict[str, str], w: str, ws: str) -> None:
+    def _add_compound(self, comp: Dict[str, str], w: str, ws: Optional[str]) -> None:
         if ws is not None:
             ws_merged = self._append_suffix_and_prefix(ws)
             comp[w] = ws_merged
@@ -163,11 +163,9 @@ class Splitter:
             ws = w.split("-")
             for wi in ws:
                 res = self._generate_compound(wi, wns_split)
-                if res is not None:
-                    self._add_compound(comp, wi, res)
-            return
-        res = self._generate_compound(w, wns_split)
-        if res is not None:
+                self._add_compound(comp, wi, res)
+        else:
+            res = self._generate_compound(w, wns_split)
             self._add_compound(comp, w, res)
 
     def _unknown_word_compounding(self, w: str) -> Tuple[str, Set[str]]:
