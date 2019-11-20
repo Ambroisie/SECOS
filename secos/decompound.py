@@ -275,12 +275,3 @@ class Splitter:
         if idx >= 0:
             return cands[idx]
         return None
-
-    @staticmethod
-    def _get_first_dash(compounds: Iterable[str]) -> int:
-        i = 0
-        for c in compounds:
-            if "-" in c:
-                return i
-            i += 1
-        return -1

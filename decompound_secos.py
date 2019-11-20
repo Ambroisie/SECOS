@@ -4,6 +4,7 @@
 
 import logging
 import sys
+from typing import Iterable
 
 from secos import Splitter
 
@@ -14,6 +15,15 @@ logging.basicConfig(
 
 def eprint(*args, **kwargs) -> None:
     print(*args, file=sys.stderr, **kwargs)
+
+
+def get_first_dash(compounds: Iterable[str]) -> int:
+    i = 0
+    for c in compounds:
+        if "-" in c:
+            return i
+        i += 1
+    return -1
 
 
 if len(sys.argv) < 11:
@@ -100,7 +110,7 @@ for l in open(file_compound):
     feats = ""
     cands = [c1, c2, c3, u]
     cands_str = ["C1", "C2", "C3", "U"]
-    idx = decompounder._get_first_dash(cands)
+    idx = get_first_dash(cands)
     if idx >= 0:
         cand = cands[idx]
         prefix = cands_str[idx]
