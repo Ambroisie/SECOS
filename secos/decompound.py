@@ -46,7 +46,6 @@ class Splitter:
     uppercase_first_letter: bool = False
     single_words: Set[str] = field(default_factory=set, init=False)
     # count suffixes and prefixes
-    fillers: Dict[str, int] = field(default_factory=dict, init=False)
     total_word_count: int = field(default=0, init=False)
     word_count: Dict[str, int] = field(default_factory=dict, init=False)
     comp1: Dict[str, str] = field(default_factory=dict, init=False)
@@ -72,20 +71,12 @@ class Splitter:
                 nws.add(w)
         return list(nws)
 
-    def _add_up(self, w: str) -> None:
-        if w in self.fillers:
-            self.fillers[w] += 1
-        else:
-            self.fillers[w] = 1
-
     def _append_suffix(self, w: str) -> str:
         nl = ""
         # first append on the left side
         for l in w.split("-"):
             if len(l) > self.suffix_length:
                 nl += "-"
-            else:
-                self._add_up(l)
             nl += l
         nl = nl.strip("-")
         return nl
