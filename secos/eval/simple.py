@@ -9,11 +9,18 @@ from .common import EvalResult, evaluate
 
 @dataclass
 class Evaluator(AbstractEvaluator):
+    """
+    Simple evaluator.
+    """
+
     col_split: int
     col_gold: int
     input: TextIO = sys.stdin
 
     def evaluate(self, output: TextIO = sys.stdout) -> None:
+        """
+        Evaluate the output of the SECOS algorithm.
+        """
         a = 0
         c = 0
         scores = EvalResult(0, 0, 0)

@@ -8,6 +8,10 @@ from typing import Dict, Iterable, List, Pattern, TextIO
 
 
 def add_to_set(d: Dict[str, int], s: Iterable[str]) -> None:
+    """
+    Increment the values mapped in d to each string in s,
+    creating the mapping if it doesn't exist.
+    """
     for w in s:
         if w in d:
             d[w] += 1
@@ -17,6 +21,10 @@ def add_to_set(d: Dict[str, int], s: Iterable[str]) -> None:
 
 @dataclass
 class Trainer:
+    """
+    Train the SECOS model from a distributional thesaurus.
+    """
+
     input: TextIO = sys.stdin
     split_dash: bool = False
     dt: Dict[str, List[str]] = field(default_factory=dict, init=False)
@@ -24,9 +32,17 @@ class Trainer:
     accept: Pattern[str] = field(init=False)
 
     def __post_init__(self, pattern: str) -> None:
+        """
+        This hook is run at the end of __init__, with variables marked as
+        `InitVar` given as arguments.
+        """
         self.accept = re.compile(pattern)
 
     def _get_overlap(self, w: str, ls: List[str]) -> List[str]:
+        """
+        Return the list of words in ls that are subsets of w, taking into account if
+        words should be split on dashes.
+        """
         wl = w.lower()
         ret = []
         for l in ls:
@@ -40,6 +56,9 @@ class Trainer:
         return ret
 
     def _read_input(self) -> None:
+        """
+        Read the distributional thesaurus.
+        """
         for l in self.input:
             ls = l.strip().split("\t")
             w1 = ls[0]

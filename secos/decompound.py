@@ -6,6 +6,9 @@ from typing import IO, Dict, Iterable, List, Optional, Set, Tuple
 
 
 def nopen(f: str) -> IO[str]:
+    """
+    Opens the given filename, handling tarballs if they end in '.gz'
+    """
     if f.endswith(".gz"):
         return gzip.open(f)
     return open(f, encoding="utf-8")
@@ -13,6 +16,10 @@ def nopen(f: str) -> IO[str]:
 
 @dataclass
 class Splitter:
+    """
+    This class uses a trained model to split a compound word into its constituent atoms.
+    """
+
     class DashBehaviour(IntEnum):
         """
         Which heuristic should the decompounder use to split dashed-words.
@@ -38,6 +45,9 @@ class Splitter:
     comp3: Dict[str, str] = field(default_factory=dict, init=False)
 
     def _remove_word(self, w: str) -> bool:
+        """
+        Returns True if the input word should be discarded from the input corpus.
+        """
         if len(w.replace("-", "")) == 0:
             return True
         if self.min_word_count <= 0:
@@ -45,6 +55,11 @@ class Splitter:
         return self.word_count.get(w, 0) < self.min_word_count
 
     def _remove_short_and_equal(self, wc: str, ws: Iterable[str]) -> List[str]:
+        """
+        Takes a word and a list of words, returns a list corresponding to the set of
+        all valid words in the list which are nested in but different from the given
+        word.
+        """
         nws = set()
         for w in ws:
             if (
@@ -57,6 +72,10 @@ class Splitter:
         return list(nws)
 
     def _append_suffix(self, w: str) -> str:
+        """
+        Appends n-grams lower than suffix length to the word to their left, returns the
+        resulting string.
+        """
         nl = ""
         # first append on the left side
         for l in w.split("-"):
@@ -67,6 +86,10 @@ class Splitter:
         return nl
 
     def _append_prefix(self, w: str) -> str:
+        """
+        Prepends n-grams lower than prefix length to the word to their left, returns the
+        resulting string.
+        """
         # append to the right
         nl = ""
         for l in w.split("-"):
@@ -78,6 +101,10 @@ class Splitter:
         return nl
 
     def _get_word_counts(self, comp: str) -> float:
+        """
+        Calculates the score for given compound, based on the geometric mean of the
+        frequency of its parts.
+        """
         tot = 1.0
         split = comp.split("-")
         for c in split:
@@ -89,6 +116,9 @@ class Splitter:
         return pow(tot, 1.0 / len(split))
 
     def _append_suffix_and_prefix(self, w: str) -> str:
+        """
+        Returns the best split candidate by applying suffix-prefix and prefix-suffix.
+        """
         sp = self._append_suffix(self._append_prefix(w))
         ps = self._append_prefix(self._append_suffix(w))
         spc = self._get_word_counts(sp)
@@ -98,6 +128,9 @@ class Splitter:
         return ps
 
     def _generate_compound(self, w: str, ws: Iterable[str]) -> Optional[str]:
+        """
+        Try to split the compound w using the split candidates in ws.
+        """
         # remove too short words
         nws = self._remove_short_and_equal(w, ws)
         if len(nws) == 0:
@@ -126,12 +159,18 @@ class Splitter:
         return wc
 
     def _add_compound(self, comp: Dict[str, str], w: str, ws: Optional[str]) -> None:
+        """
+        If ws is a real split candidate, add the mapping from w to it in comp.
+        """
         if ws is not None:
             ws_merged = self._append_suffix_and_prefix(ws)
             comp[w] = ws_merged
             logging.debug(f"Result: {w}\t{ws}\t{ws_merged}")
 
     def _process_compound(self, comp: Dict[str, str], w: str, wns: str) -> None:
+        """
+        Process trained data for the word w, with candidates wns, in the mapping cmp.
+        """
         wns_split = wns.split(" ")
         if "-" in w and self.dash_words == self.DashBehaviour.REMOVE:
             return
@@ -145,6 +184,11 @@ class Splitter:
             self._add_compound(comp, w, res)
 
     def _unknown_word_compounding(self, w: str) -> Tuple[str, Set[str]]:
+        """
+        Compute a split candidate or itself, and the candidate atoms for any word,
+        as if it were out of vocabulary.
+        """
+
         def contained_in(c: str, cands: Iterable[str]) -> bool:
             for cj in cands:
                 if c.lower() in cj.lower() and c.lower() != cj.lower():
@@ -169,6 +213,9 @@ class Splitter:
         return (res, cands_new)
 
     def _get_highest_prob(self, compounds: Iterable[str]) -> Tuple[int, float]:
+        """
+        Return the index and score of the top-ranking compound. Defaults to (-1, 0.0).
+        """
         probs = []
         for c in compounds:
             p = self._get_word_counts(c)

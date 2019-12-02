@@ -13,6 +13,10 @@ ScoreResult = Tuple[float, float, float]
 
 @dataclass
 class WilcoxonEvaluator(AbstractEvaluator):
+    """
+    Evaluator using the Wilcoxon test.
+    """
+
     class InputError(RuntimeError):
         """
         Error thrown when input files are not the same length
@@ -28,6 +32,10 @@ class WilcoxonEvaluator(AbstractEvaluator):
     f2_col_gold: int
 
     def evaluate(self, output: TextIO = sys.stdout) -> None:
+        """
+        Evaluate the output of the SECOS algorithm.
+        """
+
         def print_eval(scores: ScoreResult, a: float, c: float) -> None:
             k = scores
             print(scores, file=output)
