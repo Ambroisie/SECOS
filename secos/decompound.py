@@ -11,21 +11,6 @@ def nopen(f: str) -> IO[str]:
     return open(f, encoding="utf-8")
 
 
-def contained_in(c: str, cands: Iterable[str]) -> bool:
-    for cj in cands:
-        if c.lower() in cj.lower() and c.lower() != cj.lower():
-            return True
-    return False
-
-
-def get_max_idx(ls: Iterable[float]) -> Tuple[int, float]:
-    """
-    Return the index and value of the maximum in the given iterable,
-    returns (-1, 0.0) on empty iterables
-    """
-    return max(enumerate(ls), key=lambda x: x[1], default=(-1, 0.0))
-
-
 @dataclass
 class Splitter:
     class DashBehaviour(IntEnum):
@@ -160,6 +145,12 @@ class Splitter:
             self._add_compound(comp, w, res)
 
     def _unknown_word_compounding(self, w: str) -> Tuple[str, Set[str]]:
+        def contained_in(c: str, cands: Iterable[str]) -> bool:
+            for cj in cands:
+                if c.lower() in cj.lower() and c.lower() != cj.lower():
+                    return True
+            return False
+
         cands = set()
         for s in self.single_words:
             if s.lower() in w.lower() and not s.lower() == w.lower():
@@ -182,7 +173,7 @@ class Splitter:
         for c in compounds:
             p = self._get_word_counts(c)
             probs.append(p)
-        return get_max_idx(probs)
+        return max(enumerate(probs), key=lambda x: x[1], default=(-1, 0.0))
 
     def read_word_count(self, name: str) -> None:
         """
